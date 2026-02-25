@@ -1,2 +1,0 @@
-# OwnifiantPan.cart
-MobileSupremeOwnifizer
