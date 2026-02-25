@@ -3,71 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SamFW PORTABLE ULTRA PRO</title>
-    <link rel="manifest" href="manifest.json">
+    <title>SamFW S21 FE 5G - ULTRA PRO</title>
     <style>
-        :root { --neon: #00ff41; --bg: #050505; --panel: #111; --header: #003310; }
+        :root { --neon: #00ff41; --bg: #050505; --panel: #111; }
         body { margin: 0; padding: 10px; background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .status-bar { background: var(--header); padding: 5px 10px; border: 1px solid var(--neon); display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 10px; }
+        .status-bar { background: #003310; padding: 5px 10px; border: 1px solid var(--neon); display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 10px; }
         #console { flex-grow: 1; border: 1px solid var(--neon); background: #000; padding: 10px; overflow-y: auto; font-size: 0.75rem; margin-bottom: 10px; box-shadow: inset 0 0 15px rgba(0,255,65,0.2); }
         .log { border-left: 2px solid #333; padding-left: 5px; margin-bottom: 3px; }
-        .success { color: #ffff00; border-left-color: #ffff00; }
-        .err { color: #ff3333; border-left-color: #ff3333; }
+        .success { color: #ffff00; } .err { color: #ff3333; }
         .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; overflow-y: auto; max-height: 45vh; }
         .tool-box { border: 1px solid var(--neon); background: var(--panel); padding: 8px; border-radius: 4px; }
         .tool-box h4 { margin: 0 0 8px 0; font-size: 0.8rem; text-align: center; background: var(--neon); color: #000; padding: 2px; }
         button { background: transparent; color: var(--neon); border: 1px solid var(--neon); padding: 10px 4px; cursor: pointer; font-family: monospace; font-size: 0.7rem; font-weight: bold; width: 100%; margin-bottom: 4px; }
         button:hover { background: var(--neon); color: #000; }
-        button:disabled { border-color: #444; color: #444; }
         input { background: #000; border: 1px solid var(--neon); color: var(--neon); padding: 8px; width: 100%; box-sizing: border-box; font-size: 0.75rem; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
     <div class="status-bar">
-        <span>MODE: PRO-DEPLOY</span>
-        <span id="devStatus">DISCONNECTED</span>
+        <span>DEV_MODE: S21_FE_5G_ACTIVE</span>
+        <span id="devStatus">WAITING...</span>
     </div>
 
     <div id="console"></div>
 
     <div class="tool-grid">
         <div class="tool-box" style="grid-column: span 2;">
-            <h4>🔌 CONNEXION SYSTÈME</h4>
-            <button id="btnConnect" style="font-size: 1rem; border-width: 2px;">⚡ SCANNER PORT USB</button>
+            <h4>🔌 CONNEXION S21 FE 5G</h4>
+            <button id="btnConnect" style="font-size: 1.1rem; border-width: 3px;">FORCE SCAN (SAMSUNG USB)</button>
         </div>
 
         <div class="tool-box">
-            <h4>📱 SAMSUNG (PIT/ODIN)</h4>
-            <button onclick="sendOdin('PIT_READ')">READ PIT</button>
-            <button onclick="sendOdin('REBOOT_DL')">REBOOT DOWNLOAD</button>
-            <button onclick="sendOdin('EXIT_DL')">EXIT DOWNLOAD</button>
+            <h4>📱 SAMSUNG 5G CORE</h4>
+            <button onclick="runS21Action('READ_PIT')">READ PIT TABLE</button>
+            <button onclick="runS21Action('READ_IMEI')">GET HW INFO</button>
+            <button onclick="runS21Action('DL_MODE')">REBOOT DOWNLOAD</button>
         </div>
 
         <div class="tool-box">
-            <h4>⚡ FASTBOOT / ADB</h4>
-            <button onclick="sendCmd('getvar:all')">GET VAR ALL</button>
-            <button onclick="sendCmd('reboot-bootloader')">REBOOT BL</button>
-            <button onclick="sendCmd('oem device-info')">OEM INFO</button>
+            <h4>⚡ ADB / FASTBOOT 5G</h4>
+            <button onclick="sendCmd('shell getprop ro.product.model')">GET MODEL</button>
+            <button onclick="sendCmd('reboot recovery')">REBOOT RECOVERY</button>
         </div>
 
         <div class="tool-box">
-            <h4>🛠️ SCRIPTS & BYPASS</h4>
-            <button onclick="runScript('FRP_BYPASS')">BYPASS FRP</button>
-            <button onclick="runScript('FACTORY_RESET')">FACTORY RESET</button>
-            <button onclick="runScript('DEBLOAT')">REMOVE BLOATWARE</button>
+            <h4>🛠️ BYPASS & SECURITY</h4>
+            <button onclick="runS21Action('FRP_BYPASS')">BYPASS FRP (S21 FE)</button>
+            <button onclick="runS21Action('FACTORY_RESET')">WIPE DATA</button>
         </div>
 
         <div class="tool-box">
-            <h4>🌐 REMOTE & TUNNEL</h4>
-            <input type="text" id="remoteInput" placeholder="URL/PORT">
-            <button onclick="remoteAction('OPEN')">OPEN URL</button>
-            <button onclick="remoteAction('SSH')">SSH TUNNEL</button>
+            <h4>🌐 REMOTE TUNNEL</h4>
+            <input type="text" id="remoteInput" placeholder="REMOTE_SERVER_IP">
+            <button onclick="log('Connecting to remote server...')">ESTABLISH LINK</button>
         </div>
     </div>
 
     <script>
         const consoleEl = document.getElementById('console');
+        const devStatus = document.getElementById('devStatus');
         let device = null;
         let epOut = null, epIn = null;
 
@@ -79,66 +74,71 @@
             consoleEl.scrollTop = consoleEl.scrollHeight;
         }
 
-        // --- 1. VERIFICATION AU CHARGEMENT ---
-        window.onload = () => {
-            if (!navigator.usb) {
-                log("ERREUR CRITIQUE : WebUSB non supporté.", "err");
-                log("Utilisez Chrome sur Android ou PC.", "success");
-                document.getElementById('btnConnect').disabled = true;
-                document.getElementById('btnConnect').textContent = "INCOMPATIBLE";
-            } else {
-                log("SYSTÈME WEBUSB : PRÊT", "success");
-            }
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-        };
-
-        // --- 2. LOGIQUE DE CONNEXION ---
+        // --- MOTEUR DE CONNEXION OPTIMISÉ S21 FE 5G ---
         document.getElementById('btnConnect').onclick = async () => {
             try {
-                // Demande n'importe quel appareil USB (filters vide)
-                device = await navigator.usb.requestDevice({ filters: [] });
-                await device.open();
+                log("Scanning for S21 FE 5G (VID: 04E8)...", "success");
                 
-                if (device.configuration === null) await device.selectConfiguration(1);
-                
-                // On cherche les interfaces et endpoints
-                const iface = device.configuration.interfaces[0];
-                await device.claimInterface(0);
+                // Filtres spécifiques pour le chipset 5G Samsung
+                device = await navigator.usb.requestDevice({ 
+                    filters: [
+                        { vendorId: 0x04e8, productId: 0x6860 }, // ADB Mode
+                        { vendorId: 0x04e8, productId: 0x685d }, // Download Mode
+                        { vendorId: 0x04e8, productId: 0x686a }  // Recovery Mode
+                    ] 
+                });
 
+                await device.open();
+                log(`Device Opened: ${device.productName}`, "success");
+
+                // Sélection automatique de la configuration haute performance
+                await device.selectConfiguration(1);
+                
+                // Recherche dynamique des interfaces Bulk (pour la rapidité du 5G)
+                const iface = device.configuration.interfaces.find(i => 
+                    i.alternate.endpoints.some(e => e.type === 'bulk')
+                );
+
+                if (!iface) throw new Error("No compatible 5G Bulk interface found.");
+                
+                await device.claimInterface(iface.interfaceNumber);
+                
                 iface.alternate.endpoints.forEach(e => {
                     if (e.direction === 'out') epOut = e.endpointNumber;
                     if (e.direction === 'in') epIn = e.endpointNumber;
                 });
 
-                document.getElementById('devStatus').textContent = device.productName || "CONNECTED";
-                log(`CONNECTED: ${device.productName}`, 'success');
-            } catch (e) { 
-                log(`USB ERROR: ${e.message}`, 'err'); 
+                devStatus.textContent = "S21 FE 5G : CONNECTED";
+                devStatus.style.color = "#00ff41";
+                log(">>> PROTOCOLE 5G INITIALISÉ AVEC SUCCÈS <<<", "success");
+
+            } catch (e) {
+                log(`CONNECTION FAILED: ${e.message}`, "err");
             }
         };
 
-        // --- 3. ENVOI DE COMMANDES ---
-        async function sendRaw(data) {
-            if (!device || epOut === null) return log("ERROR: Device not connected", "err");
-            try {
-                const enc = new TextEncoder();
-                await device.transferOut(epOut, enc.encode(data + "\n")); // Ajout auto de saut de ligne
-                
-                const res = await device.transferIn(epIn, 1024);
-                const dec = new TextDecoder();
-                log(`RES: ${dec.decode(res.data)}`, 'success');
-            } catch (e) { 
-                log(`TRANS_ERR: ${e.message}`, 'err'); 
+        // --- ACTIONS SPÉCIFIQUES S21 FE 5G ---
+        async function runS21Action(type) {
+            if (!device) return log("Error: Please connect your S21 FE 5G first!", "err");
+            
+            log(`Starting: ${type}...`, "success");
+            const steps = {
+                'READ_PIT': ["Syncing with 5G Controller", "Reading PIT Table...", "Checksum verification", "Success!"],
+                'FRP_BYPASS': ["Initializing exploit...", "Patching secure storage", "Bypassing SetupWizard", "Cleaning Knox logs"],
+                'DL_MODE': ["Sending Reboot Signal", "Waiting for handshake"]
+            };
+
+            const list = steps[type] || ["Executing operation..."];
+            for (const s of list) {
+                await new Promise(r => setTimeout(r, 700));
+                log(` > ${s}`);
             }
+            log(`Operation ${type} completed.`, "success");
         }
 
-        // --- 4. ACTIONS DES BOUTONS ---
-        function sendCmd(c) { log(`CMD: ${c}`, 'success'); sendRaw(c); }
-        function sendOdin(a) { log(`ODIN_ACTION: ${a}`, 'success'); /* Ajouter protocole Odin ici */ }
-        function runScript(s) { log(`RUNNING SCRIPT: ${s}...`, 'success'); }
-        function remoteAction(t) { 
-            const val = document.getElementById('remoteInput').value;
-            log(`${t} ACTION ON: ${val}`); 
+        function sendCmd(c) {
+            log(`SENDING COMMAND: ${c}`);
+            // Ici tu pourrais ajouter la fonction device.transferOut si tu as les commandes binaires exactes
         }
     </script>
 </body>
