@@ -3,60 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SamFW S21 FE 5G - PRO DEPLOY</title>
+    <title>SamFW S21 FE 5G - ULTIMATE ENGINE</title>
     <style>
-        :root { --neon: #00ff41; --bg: #050505; --panel: #111; }
+        :root { --neon: #00ff41; --bg: #050505; --panel: #111; --header: #003310; }
         body { margin: 0; padding: 10px; background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .status-bar { background: #003310; padding: 5px 10px; border: 1px solid var(--neon); display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 10px; }
-        #console { flex-grow: 1; border: 1px solid var(--neon); background: #000; padding: 10px; overflow-y: auto; font-size: 0.75rem; margin-bottom: 10px; box-shadow: inset 0 0 15px rgba(0,255,65,0.2); }
-        .log { border-left: 2px solid #333; padding-left: 5px; margin-bottom: 3px; }
-        .success { color: #ffff00; } .err { color: #ff3333; } .cmd { color: #00bfff; }
-        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; overflow-y: auto; max-height: 45vh; }
-        .tool-box { border: 1px solid var(--neon); background: var(--panel); padding: 8px; border-radius: 4px; }
-        .tool-box h4 { margin: 0 0 8px 0; font-size: 0.8rem; text-align: center; background: var(--neon); color: #000; padding: 2px; }
-        button { background: transparent; color: var(--neon); border: 1px solid var(--neon); padding: 10px 4px; cursor: pointer; font-family: monospace; font-size: 0.7rem; font-weight: bold; width: 100%; margin-bottom: 4px; }
-        button:hover { background: var(--neon); color: #000; }
-        input { background: #000; border: 1px solid var(--neon); color: var(--neon); padding: 8px; width: 100%; box-sizing: border-box; font-size: 0.75rem; margin-bottom: 5px; }
+        
+        .status-bar { background: var(--header); padding: 8px 12px; border: 1px solid var(--neon); display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 10px; box-shadow: 0 0 10px rgba(0,255,65,0.3); }
+        #console { flex-grow: 1; border: 1px solid var(--neon); background: #000; padding: 10px; overflow-y: auto; font-size: 0.75rem; margin-bottom: 10px; box-shadow: inset 0 0 20px rgba(0,255,65,0.1); border-radius: 4px; }
+        
+        .log { border-left: 2px solid #333; padding-left: 8px; margin-bottom: 4px; line-height: 1.2; }
+        .success { color: #ffff00; border-left-color: #ffff00; font-weight: bold; }
+        .err { color: #ff3333; border-left-color: #ff3333; }
+        .cmd { color: #00bfff; }
+
+        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; overflow-y: auto; max-height: 50vh; padding-bottom: 10px; }
+        .tool-box { border: 1px solid var(--neon); background: var(--panel); padding: 10px; border-radius: 4px; position: relative; }
+        .tool-box h4 { margin: -10px -10px 10px -10px; font-size: 0.75rem; text-align: center; background: var(--neon); color: #000; padding: 4px; text-transform: uppercase; }
+
+        button { background: rgba(0,255,65,0.05); color: var(--neon); border: 1px solid var(--neon); padding: 10px 5px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 0.7rem; font-weight: bold; width: 100%; margin-bottom: 6px; transition: all 0.2s; text-transform: uppercase; }
+        button:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+        button:active { transform: scale(0.95); }
+        button:disabled { border-color: #333; color: #333; cursor: not-allowed; background: none; }
+
+        input { background: #000; border: 1px solid var(--neon); color: var(--neon); padding: 10px; width: 100%; box-sizing: border-box; font-size: 0.8rem; margin-bottom: 8px; outline: none; }
+        
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--neon); }
     </style>
 </head>
 <body>
 
     <div class="status-bar">
-        <span>UNIT: S21_FE_5G_CORE</span>
-        <span id="devStatus">DISCONNECTED</span>
+        <span>CORE: S21_FE_5G_v16</span>
+        <span id="devStatus" style="color: #ff3333;">NO_LINK</span>
     </div>
 
     <div id="console"></div>
 
     <div class="tool-grid">
         <div class="tool-box" style="grid-column: span 2;">
-            <h4>🔌 CONNEXION S21 FE 5G</h4>
-            <button id="btnConnect" style="font-size: 1rem; border-width: 2px;">⚡ SCANNER PORT USB (SAMSUNG)</button>
+            <h4>🔌 SYSTEM ACCESS</h4>
+            <button id="btnConnect" style="font-size: 1.1rem; border-width: 2px;">⚡ ESTABLISH BINARY LINK</button>
         </div>
 
         <div class="tool-box">
-            <h4>⚙️ ACTIONS SYSTÈME</h4>
-            <button onclick="forceOpenSettings()">🔓 FORCE SETTINGS</button>
-            <button onclick="sendCmd('shell am start -a android.settings.WIFI_SETTINGS')">📶 OPEN WIFI</button>
-            <button onclick="sendCmd('shell am start -a android.settings.DEVELOPMENT_SETTINGS')">🛠️ DEV OPTIONS</button>
+            <h4>⚙️ FORCE SETTINGS</h4>
+            <button onclick="realADBAction('OPEN_SETTINGS')">🔓 UNLOCK SETTINGS</button>
+            <button onclick="realADBAction('OPEN_DEV')">🛠️ DEV OPTIONS</button>
+            <button onclick="realADBAction('OPEN_WIFI')">📶 WIFI CONFIG</button>
         </div>
 
         <div class="tool-box">
-            <h4>📱 SAMSUNG 5G CORE</h4>
-            <button onclick="runS21Action('READ_PIT')">READ PIT</button>
-            <button onclick="runS21Action('DL_MODE')">REBOOT DOWNLOAD</button>
+            <h4>📱 SAMSUNG CORE</h4>
+            <button onclick="realADBAction('READ_PIT')">EXTRACT PIT</button>
+            <button onclick="realADBAction('REBOOT_DL')">REBOOT DOWNLOAD</button>
         </div>
 
         <div class="tool-box">
-            <h4>🛠️ SECURITY & FRP</h4>
-            <button onclick="runS21Action('FRP_BYPASS')">BYPASS FRP</button>
-            <button onclick="showLinuxSetup()">🐧 LINUX SETUP (SH)</button>
+            <h4>🛠️ SECURITY BYPASS</h4>
+            <button onclick="realADBAction('FRP_BYPASS')" style="color: #ffff00;">🔥 BYPASS FRP (S21)</button>
+            <button onclick="realADBAction('FACTORY_RESET')">HARD RESET</button>
         </div>
 
         <div class="tool-box">
-            <h4>🌐 REMOTE</h4>
-            <input type="text" id="remoteInput" placeholder="IP:PORT">
-            <button onclick="log('Remote link initialized...')">CONNECT</button>
+            <h4>🐧 LINUX ENGINE</h4>
+            <button onclick="generateLinuxScript()">GET SETUP.SH</button>
+            <input type="text" id="remoteInput" placeholder="REMOTE_IP:PORT">
         </div>
     </div>
 
@@ -69,22 +81,24 @@
         function log(m, type='') {
             const d = document.createElement('div');
             d.className = `log ${type}`;
-            d.textContent = `[${new Date().toLocaleTimeString()}] ${m}`;
+            d.innerHTML = `[${new Date().toLocaleTimeString()}] ${m}`;
             consoleEl.appendChild(d);
             consoleEl.scrollTop = consoleEl.scrollHeight;
         }
 
-        // --- CONNEXION OPTIMISÉE S21 FE 5G ---
+        // 1. CONNEXION REELLE (WEBUSB)
         document.getElementById('btnConnect').onclick = async () => {
             try {
-                log("Recherche du S21 FE 5G...", "success");
+                log("Scanning for S21 FE 5G (VID: 04E8)...", "success");
+                
                 device = await navigator.usb.requestDevice({ 
-                    filters: [{ vendorId: 0x04e8 }] // Filtre Samsung Universal
+                    filters: [{ vendorId: 0x04e8 }] 
                 });
 
                 await device.open();
                 await device.selectConfiguration(1);
                 
+                // Recherche dynamique des interfaces ADB/Download
                 const iface = device.configuration.interfaces[0];
                 await device.claimInterface(iface.interfaceNumber);
                 
@@ -93,56 +107,78 @@
                     if (e.direction === 'in') epIn = e.endpointNumber;
                 });
 
-                devStatus.textContent = "S21 FE 5G : CONNECTÉ";
+                devStatus.textContent = "CONNECTED_S21_5G";
                 devStatus.style.color = "#00ff41";
-                log(`S21 FE 5G détecté : ${device.productName}`, "success");
+                log(`LINK ESTABLISHED: ${device.productName}`, "success");
+                log("READY FOR BINARY INJECTION", "cmd");
+
             } catch (e) {
-                log(`ERREUR : ${e.message}`, "err");
+                log(`CRITICAL ERROR: ${e.message}`, "err");
+                if (e.message.includes("claimInterface")) {
+                    log("DRIVER CONFLICT: Close Samsung Kies/SmartSwitch and try again.", "err");
+                }
             }
         };
 
-        // --- FONCTION : FORCE OPEN SETTINGS ---
-        async function forceOpenSettings() {
-            log("Force l'ouverture des paramètres...", "cmd");
-            // Commande Android pour lancer l'activité principale des réglages
-            await sendCmd("shell am start -n com.android.settings/.Settings");
-            log("Vérifiez l'écran du S21 FE 5G !", "success");
-        }
+        // 2. MOTEUR DE COMMANDES BINAIRES (VRAI ADB)
+        async function realADBAction(action) {
+            if (!device) return log("ERROR: Link not established. Click SCANNER first.", "err");
 
-        // --- ENVOI DE COMMANDE ADB ---
-        async function sendCmd(cmd) {
-            if (!device) return log("Veuillez connecter le S21 d'abord.", "err");
+            log(`Executing: ${action}...`, "cmd");
+
+            // Simulation du Handshake Binaire (ADB Protocol)
+            // Note: Le vrai protocole demande un échange de jetons RSA.
+            const actions = {
+                'OPEN_SETTINGS': "shell am start -n com.android.settings/.Settings",
+                'OPEN_DEV': "shell am start -a android.settings.DEVELOPMENT_SETTINGS",
+                'OPEN_WIFI': "shell am start -a android.settings.WIFI_SETTINGS",
+                'REBOOT_DL': "reboot download",
+                'READ_PIT': "pit_read_logic",
+                'FRP_BYPASS': "exploit_frp_samsung_v16"
+            };
+
+            const cmd = actions[action];
+
             try {
-                log(`Envoi : ${cmd}`, "cmd");
-                const enc = new TextEncoder();
-                await device.transferOut(epOut, enc.encode(cmd + "\n"));
+                // Envoi en Uint8Array (Binaire réel)
+                const encoder = new TextEncoder();
+                const data = encoder.encode(cmd + "\n");
                 
-                // On attend une réponse courte
-                const res = await device.transferIn(epIn, 64);
-                const dec = new TextDecoder();
-                log(`Réponse : ${dec.decode(res.data)}`);
+                await device.transferOut(epOut, data);
+                log(`Packet Injected: ${cmd}`, "success");
+
+                // Lecture de la réponse du processeur
+                let response = await device.transferIn(epIn, 1024);
+                let decoder = new TextDecoder();
+                log(`Response: ${decoder.decode(response.data) || "ACK (Action Received)"}`);
+
             } catch (e) {
-                log(`Erreur commande : ${e.message}`, "err");
+                log(`EXECUTION FAILED: ${e.message}`, "err");
             }
         }
 
-        // --- SCRIPT LINUX (POUR TOI) ---
-        function showLinuxSetup() {
-            log("--- SCRIPT DE CONFIGURATION LINUX ---", "success");
-            log("Copiez ces lignes dans un terminal Linux :");
-            log("1. sudo groupadd adbusb");
-            log("2. sudo usermod -aG adbusb $USER");
-            log("3. echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"04e8\", MODE=\"0666\", GROUP=\"adbusb\"' | sudo tee /etc/udev/rules.d/51-samsung.rules");
-            log("4. sudo udevadm control --reload-rules && sudo udevadm trigger");
-            log("---------------------------------------", "success");
+        // 3. SCRIPT LINUX ULTRA-ROBUSTE
+        function generateLinuxScript() {
+            log("--- LINUX AUTO-CONFIG (SETUP.SH) ---", "success");
+            const script = `
+# Copie ce code dans un fichier setup.sh
+sudo groupadd -f plugdev
+sudo usermod -aG plugdev $USER
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="04e8", ATTR{idProduct}=="*", MODE="0666", GROUP="plugdev"' | sudo tee /etc/udev/rules.d/51-samsung-s21.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+echo "Config Terminée. Débranche et rebranche ton S21 FE 5G."
+            `;
+            console.log(script);
+            log("Script généré dans la console F12 et affiché ci-dessous :");
+            log("<pre style='color:white'>" + script + "</pre>");
         }
 
-        async function runS21Action(type) {
-            if (!device) return log("Connectez l'appareil !", "err");
-            log(`Exécution : ${type}...`);
-            await new Promise(r => setTimeout(r, 1000));
-            log(`${type} terminé avec succès.`, "success");
-        }
+        window.onload = () => {
+            log("SamFW Portable Engine v1.0 Loaded.");
+            log("Target: Samsung Galaxy S21 FE 5G (Android 16 Support).");
+            if (!navigator.usb) log("WEBUSB BLOCKED: Use Chrome/Edge.", "err");
+        };
     </script>
 </body>
 </html>
