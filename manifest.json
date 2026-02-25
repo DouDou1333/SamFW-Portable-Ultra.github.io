@@ -1,0 +1,21 @@
+{
+  "name": "SamFW Portable Ultra PRO",
+  "short_name": "SamFW PRO",
+  "description": "Interface de dépannage USB professionnelle",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#00ff41",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2521/2521629.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2521/2521629.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
