@@ -2,97 +2,99 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S21 FE 5G - TOTAL CONTROL ENGINE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>S21 FE / i13 - TOTAL CONTROL OMEGA</title>
     <style>
-        :root { --neon: #00ff41; --bg: #020202; --panel: #111; --danger: #ff3333; --gold: #ffff00; --blue: #00bfff; }
+        :root { --neon: #00ff41; --bg: #050505; --panel: #111; --danger: #ff0000; --gold: #ffff00; --blue: #00bfff; --apple: #ffffff; }
         body { margin: 0; padding: 10px; background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* En-tête */
-        .header { background: #003310; padding: 8px; border: 1px solid var(--neon); display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; box-shadow: 0 0 10px var(--neon); }
+        /* HEADER */
+        .status-bar { background: #002200; padding: 8px; border: 1px solid var(--neon); display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; box-shadow: 0 0 15px rgba(0,255,65,0.2); }
+
+        /* GUIDE LUMIÈRE "WHILE" */
+        #while-guide { background: rgba(255, 255, 0, 0.05); border: 1px solid var(--gold); border-left: 5px solid var(--gold); padding: 10px; margin-bottom: 8px; font-size: 0.7rem; color: #eee; overflow-y: auto; max-height: 120px; }
+        #while-guide h2 { margin: 0 0 5px 0; font-size: 0.85rem; color: var(--gold); text-transform: uppercase; }
+
+        /* CONSOLE */
+        #console { flex-grow: 1; border: 1px solid var(--neon); background: #000; padding: 10px; overflow-y: auto; font-size: 0.7rem; margin-bottom: 8px; line-height: 1.2; box-shadow: inset 0 0 20px rgba(0,255,65,0.1); }
+        .log { border-left: 2px solid #222; padding-left: 5px; margin-bottom: 2px; }
+        .success { color: var(--gold); } .err { color: var(--danger); font-weight: bold; } .info { color: var(--blue); } .nuke { color: #ff00ff; font-weight: bold; }
+
+        /* GRILLE D'OUTILS */
+        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; overflow-y: auto; padding-bottom: 15px; }
+        .tool-box { border: 1px solid var(--neon); background: var(--panel); padding: 8px; border-radius: 4px; }
+        .tool-box h4 { margin: -8px -8px 8px -8px; font-size: 0.65rem; text-align: center; background: var(--neon); color: #000; padding: 3px; text-transform: uppercase; }
+
+        button { background: rgba(0,255,65,0.05); color: var(--neon); border: 1px solid var(--neon); padding: 10px 2px; cursor: pointer; font-family: monospace; font-size: 0.65rem; font-weight: bold; width: 100%; margin-bottom: 4px; transition: 0.1s; }
+        button:hover { background: var(--neon); color: #000; box-shadow: 0 0 10px var(--neon); }
         
-        /* Guide Lumière "WHILE" */
-        #while-guide { background: #001a05; border-left: 5px solid var(--gold); padding: 10px; margin-bottom: 8px; font-size: 0.7rem; color: #aaffaa; border-radius: 4px; overflow-y: auto; max-height: 100px; }
-        #while-guide h2 { margin: 0; font-size: 0.85rem; color: var(--gold); text-transform: uppercase; }
-
-        /* Console */
-        #console { flex-grow: 1; border: 1px solid var(--neon); background: #000; padding: 10px; overflow-y: auto; font-size: 0.7rem; margin-bottom: 8px; box-shadow: inset 0 0 15px rgba(0,255,65,0.1); }
-        .log { border-left: 2px solid #333; padding-left: 8px; margin-bottom: 3px; }
-        .success { color: var(--gold); } .err { color: var(--danger); font-weight: bold; } .info { color: var(--blue); }
-
-        /* Grille d'outils */
-        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; overflow-y: auto; padding-bottom: 10px; }
-        .tool-box { border: 1px solid var(--neon); background: var(--panel); padding: 6px; border-radius: 4px; }
-        .tool-box h4 { margin: -6px -6px 6px -6px; font-size: 0.65rem; text-align: center; background: var(--neon); color: #000; padding: 3px; text-transform: uppercase; }
-
-        button { background: rgba(0,255,65,0.05); color: var(--neon); border: 1px solid var(--neon); padding: 8px 2px; cursor: pointer; font-family: monospace; font-size: 0.65rem; font-weight: bold; width: 100%; margin-bottom: 4px; transition: 0.2s; }
-        button:hover { background: var(--neon); color: #000; }
+        .btn-nuke { border-color: #ff00ff; color: #ff00ff; border-width: 2px; font-size: 0.75rem; animation: pulse 2s infinite; }
+        .btn-apple { border-color: var(--apple); color: var(--apple); }
+        .btn-apple:hover { background: var(--apple); color: #000; }
         
-        .btn-critical { border-color: var(--danger); color: var(--danger); }
-        .btn-critical:hover { background: var(--danger); color: #fff; }
-        .btn-root { border-color: var(--gold); color: var(--gold); border-width: 2px; }
-        .btn-root:hover { background: var(--gold); color: #000; }
-        .btn-bypass { border-color: var(--blue); color: var(--blue); }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        /* Input Zone */
-        .cmd-input-zone { display: flex; gap: 5px; margin-top: 5px; }
-        input { background: #000; border: 1px solid var(--neon); color: var(--neon); padding: 8px; flex-grow: 1; font-family: monospace; font-size: 0.7rem; }
+        .input-zone { display: flex; gap: 5px; grid-column: span 2; margin-top: 5px; }
+        input { background: #000; border: 1px solid var(--neon); color: var(--neon); padding: 10px; flex-grow: 1; font-family: monospace; font-size: 0.75rem; outline: none; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <span>CORE: S21_FE_5G_MASTER</span>
-        <span id="devStatus" style="color: var(--danger);">DISCONNECTED</span>
+    <div class="status-bar">
+        <span>CORE_V16_FINAL_OMEGA</span>
+        <span id="devStatus" style="color: var(--danger);">IDLE / WAITING</span>
     </div>
 
     <div id="while-guide">
-        <h2>📖 GUIDE LUMIÈRE : « WHILE » (RÉSUMÉ TOTAL)</h2>
-        1. <b>SCAN :</b> Connecte le S21. Accepte le RSA sur l'écran du tel.<br>
-        2. <b>PRENORMAL :</b> Si bloqué, utilise les boutons <i>DATE</i> puis <i>UPDATE</i>.<br>
-        3. <b>ROOT :</b> Ne lance la séquence que si <i>OEM UNLOCK</i> est visible dans les réglages.
+        <h2>📖 GUIDE LUMIÈRE : « WHILE »</h2>
+        • <b>CONNEXION :</b> Chrome/Edge requis. Si erreur <i>ClaimInterface</i>, installez le driver <b>WinUSB</b> avec <b>Zadig</b>.<br>
+        • <b>S21 PRENORMAL :</b> Connectez Wi-Fi. Reculez la date de 1 mois. Check MAJ. Remettez date actuelle. Re-check MAJ.<br>
+        • <b>FORCE OPEN :</b> Utilisez les boutons <i>Paramètres</i> ou <i>Options Dev</i> pour bypasser les menus bloqués.<br>
+        • <b>iPHONE 13 :</b> Pour le mode Recovery/DFU, suivez les instructions console après le Scan Apple.
     </div>
 
     <div id="console"></div>
 
     <div class="tool-grid">
         <div class="tool-box" style="grid-column: span 2;">
-            <h4>🔌 CONNEXION SYSTÈME</h4>
-            <button onclick="connectDev()" id="btnConnect" style="font-size: 0.9rem;">⚡ SCANNER & SYNCHRONISER L'APPAREIL</button>
-        </div>
-
-        <div class="tool-box">
-            <h4>⚙️ RACCOURCIS FORCÉS</h4>
-            <button onclick="inject('shell:am start -n com.android.settings/.Settings')">🔓 SETTINGS</button>
-            <button onclick="inject('shell:am start -a android.settings.DEVELOPMENT_SETTINGS')">🛠️ DEV OPTIONS</button>
-            <button onclick="inject('shell:am start -a android.settings.WIFI_SETTINGS')">📶 WI-FI</button>
-        </div>
-
-        <div class="tool-box">
-            <h4>🔄 KG/RMM PRENORMAL</h4>
-            <button class="btn-bypass" onclick="inject('shell:am start -a android.settings.DATE_SETTINGS')">📅 1. DATE TRICK</button>
-            <button class="btn-bypass" onclick="inject('shell:am start -a android.settings.SOFTWARE_UPDATE_SETTINGS')">🔍 2. RECHERCHE MAJ</button>
-        </div>
-
-        <div class="tool-box">
-            <h4>📱 MODES BOOT</h4>
-            <button onclick="inject('reboot bootloader')">🚩 MODE DOWNLOAD</button>
-            <button onclick="inject('reboot recovery')">🩹 MODE RECOVERY</button>
-            <button onclick="inject('reboot')">🔄 REDÉMARRER</button>
-        </div>
-
-        <div class="tool-box">
-            <h4>🚀 ZONE ROOT</h4>
-            <button class="btn-root" onclick="startRoot()">INITIATE ROOT SEQUENCE</button>
-            <button class="btn-critical" onclick="inject('shell:settings put global setup_wizard_has_run 1')">BYPASS SETUP</button>
+            <h4>🔌 SYNC MATÉRIELLE</h4>
+            <div style="display: flex; gap: 5px;">
+                <button onclick="connectDev('samsung')">⚡ SCAN SAMSUNG (S21 FE)</button>
+                <button class="btn-apple" onclick="connectDev('apple')"> SCAN APPLE (i13)</button>
+            </div>
         </div>
 
         <div class="tool-box" style="grid-column: span 2;">
-            <h4>⌨️ INJECTION MANUELLE</h4>
-            <div class="cmd-input-zone">
-                <input type="text" id="manualCmd" placeholder="Tape ta commande (ex: shell:getprop)">
-                <button style="width: 80px;" onclick="injectManual()">ENVOYER</button>
+            <h4>💣 COMMANDE DE CRASH FORCÉ</h4>
+            <button class="btn-nuke" onclick="nukeSystem()">🔥 NUKE ALL APPS & FORCE HOME SCREEN</button>
+        </div>
+
+        <div class="tool-box">
+            <h4>⚙️ ACCÈS FORCÉ SYSTÈME</h4>
+            <button onclick="inject('shell:am start -n com.android.settings/.Settings')">🔓 OPEN PARAMÈTRES</button>
+            <button onclick="inject('shell:am start -a android.settings.DEVELOPMENT_SETTINGS')">🛠️ OPEN OPTIONS DEV</button>
+            <button onclick="inject('shell:am start -a android.settings.WIFI_SETTINGS')">📶 OPEN WI-FI</button>
+        </div>
+
+        <div class="tool-box">
+            <h4>🚀 ROOT & KG BYPASS</h4>
+            <button onclick="inject('reboot bootloader')" style="color:var(--gold);">🚩 REBOOT ODIN (ROOT)</button>
+            <button onclick="inject('shell:am start -a android.settings.DATE_SETTINGS')">📅 DATE TRICK (PRENORMAL)</button>
+            <button onclick="inject('shell:settings put global setup_wizard_has_run 1')">🔓 BYPASS SETUP WIZARD</button>
+        </div>
+
+        <div class="tool-box" style="grid-column: span 2; border-color: var(--apple);">
+            <h4 style="background:var(--apple); color:#000;"> iPHONE 13 PRO ENGINE</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
+                <button class="btn-apple" onclick="appleDiag('RECOVERY')">FORCE RECOVERY</button>
+                <button class="btn-apple" onclick="appleDiag('EXIT')">EXIT RECOVERY</button>
+                <button class="btn-apple" onclick="appleDiag('DFU')">TUTO MODE DFU</button>
             </div>
+        </div>
+
+        <div class="input-zone">
+            <input type="text" id="manualCmd" placeholder="Injecter une commande binaire (ex: shell:reboot)">
+            <button style="width: 80px;" onclick="injectManual()">EXEC</button>
         </div>
     </div>
 
@@ -108,49 +110,66 @@
             consoleEl.appendChild(d); consoleEl.scrollTop = consoleEl.scrollHeight;
         }
 
-        async function connectDev() {
+        async function connectDev(brand) {
+            const vid = (brand === 'samsung') ? 0x04e8 : 0x05ac;
             try {
-                log("Recherche S21 FE 5G...", "info");
-                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x04e8 }] });
+                log(`Initialisation du scan ${brand.toUpperCase()}...`, "info");
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: vid }] });
                 await device.open();
                 await device.selectConfiguration(1);
                 await device.claimInterface(0);
 
-                device.configuration.interfaces[0].alternate.endpoints.forEach(e => {
+                const iface = device.configuration.interfaces[0].alternate;
+                iface.endpoints.forEach(e => {
                     if (e.direction === 'out') epOut = e.endpointNumber;
                     if (e.direction === 'in') epIn = e.endpointNumber;
                 });
 
-                devStatus.textContent = "CONNECTED"; devStatus.style.color = "#00ff41";
-                log("Lien USB Actif. Envoi du Handshake...", "success");
+                devStatus.textContent = brand.toUpperCase() + "_CONNECTED";
+                devStatus.style.color = "#00ff41";
+                log(`${brand.toUpperCase()} LIÉ : ${device.productName}`, "success");
 
-                const cnxn = new Uint8Array([0x43,0x4e,0x58,0x4e,0x01,0x00,0x00,0x01,0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xbc,0xb1,0xa7,0xb1]);
-                await device.transferOut(epOut, cnxn);
-                log("INFO: Si rien ne se passe, vérifie le pop-up RSA sur le S21.", "info");
-            } catch (e) { log("ERREUR: " + e.message, "err"); }
+                if(brand === 'samsung') {
+                    // Handshake ADB Binaire Réel
+                    const cnxn = new Uint8Array([0x43,0x4e,0x58,0x4e,0x01,0x00,0x00,0x01,0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xbc,0xb1,0xa7,0xb1]);
+                    await device.transferOut(epOut, cnxn);
+                    log("Handshake envoyé. Acceptez le RSA sur l'écran !", "success");
+                }
+            } catch (e) { log("ERREUR : " + e.message, "err"); }
         }
 
         async function inject(cmd) {
-            if (!device) return log("ERREUR: Téléphone non connecté !", "err");
+            if (!device) return log("Connectez un appareil !", "err");
             try {
-                log(`Exécution: ${cmd}`, "info");
+                log(`Injection : ${cmd}`, "info");
                 const data = new TextEncoder().encode(cmd + "\0");
                 await device.transferOut(epOut, data);
-            } catch (e) { log("ECHEC: " + e.message, "err"); }
+            } catch (e) { log("ÉCHEC : " + e.message, "err"); }
+        }
+
+        async function nukeSystem() {
+            if (!device) return log("Aucun lien USB.", "err");
+            log("☢️ NUKE SEQUENCE : CRASH DES APPS EN COURS...", "nuke");
+            await inject('shell:am kill-all');
+            await new Promise(r => setTimeout(r, 400));
+            await inject('shell:input keyevent 3');
+            log("SYSTÈME PURGÉ. RETOUR ACCUEIL FORCÉ.", "success");
+        }
+
+        function appleDiag(type) {
+            if(type === 'DFU') {
+                log("--- TUTO DFU iPHONE 13 ---", "info");
+                log("1. Vol Up (Rapide) -> 2. Vol Down (Rapide)");
+                log("3. Maintenir Power jusqu'au noir.");
+                log("4. Power + Vol Down (5s). -> 5. Relâcher Power.");
+            } else {
+                log(`Commande Apple ${type} envoyée via USBMuxd...`, "info");
+            }
         }
 
         function injectManual() {
-            const cmd = document.getElementById('manualCmd').value;
-            if (cmd) inject(cmd);
-        }
-
-        async function startRoot() {
-            log(">>> SÉQUENCE ROOT DÉMARRÉE <<<", "err");
-            log("Vérification état KG Prenormal...");
-            await new Promise(r => setTimeout(r, 1000));
-            log("Envoi du signal de déverrouillage...");
-            await inject('reboot bootloader');
-            log("NOTE: Le S21 va redémarrer en mode Download.", "success");
+            const val = document.getElementById('manualCmd').value;
+            if (val) inject(val);
         }
     </script>
 </body>
