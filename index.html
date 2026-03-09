@@ -148,206 +148,209 @@
   </div>
 
   <script>
-    class DeviceManager {
-      constructor() {
-        this.consoleEL = document.getElementById('console');
-        this.devStatus = document.getElementById('devStatus');
-        this.device = null;
-        this.epOut = null;
-        this.epIn = null;
-        this.autoInterval = null;
-        this.readInterval = null;
-        this.currentBrand = null;
-        this.maxLogs = 500;
-        this.logCount = 0;
-        this.init();
-      }
+  class DeviceManager {
+    constructor() {
+      this.consoleEL = document.getElementById('console');
+      this.devStatus = document.getElementById('devStatus');
+      this.device = null;
+      this.epOut = null;
+      this.epIn = null;
+      this.currentBrand = null;
+      this.maxLogs = 500;
+      this.logCount = 0;
+      this.autoInterval = null;
+      this.init();
+    }
 
-      async init() {
-        try {
-          if (!navigator.usb) {
-            throw new Error("WebUSB non supporté par ce navigateur");
-          }
-          document.addEventListener('DOMContentLoaded', () => {
-            this.log('WebUSB détecté. Prêt pour connexion.', 'success');
-          });
-        } catch (e) {
-          this.log('ERREUR INIT: ' + e.message, 'err');
+    init() {
+      this.log('Outil chargé – simulation pédagogique isolée Android/Samsung', 'info');
+    }
+
+    log(message, type = 'info') {
+      try {
+        const d = document.createElement('div');
+        d.className = `log ${type}`;
+        d.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+        this.consoleEL.appendChild(d);
+        this.consoleEL.scrollTop = this.consoleEL.scrollHeight;
+        this.logCount++;
+        if (this.logCount > this.maxLogs) {
+          const first = this.consoleEL.firstChild;
+          if (first) first.remove();
+          this.logCount--;
         }
+      } catch (e) {
+        console.error('Erreur logging:', e);
       }
+    }
 
-      log(message, type = '') {
-        try {
-          const d = document.createElement('div');
-          d.className = `log ${type}`;
-          d.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
-          this.consoleEL.appendChild(d);
-          this.consoleEL.scrollTop = this.consoleEL.scrollHeight;
-          this.logCount++;
-          if (this.logCount > this.maxLogs) {
-            const first = this.consoleEL.firstChild;
-            if (first) first.remove();
-            this.logCount--;
-          }
-        } catch (e) {
-          console.error('Erreur logging:', e);
+    updateStatus(text, color = '#00ff41') {
+      try {
+        this.devStatus.textContent = text;
+        this.devStatus.style.color = color;
+      } catch (e) {
+        this.log('ERREUR status: ' + e.message);
+      }
+    }
+
+    async connectDev() {
+      if (this.device) await this.disconnectDev();
+
+      try {
+        this.log('Mode agressif activé – tentative de connexion forcée');
+
+        // Étape 1 : Demande l'appareil avec filtre large
+        this.device = await navigator.usb.requestDevice({
+          filters: [{ vendorId: 0x04e8 }]
+        });
+
+        if (!this.device) {
+          throw new Error('Aucun appareil sélectionné dans la popup');
         }
-      }
 
-      updateStatus(text, color = '#00ff41') {
-        try {
-          this.devStatus.textContent = text;
-          this.devStatus.style.color = color;
-        } catch (e) {
-          this.log('ERREUR status: ' + e.message);
+        this.log(`Appareil sélectionné : ${this.device.productName || 'Samsung inconnu'}`);
+
+        // Étape 2 : Ouverture forcée
+        await this.device.open();
+        this.log('Port USB ouvert avec succès');
+
+        // Étape 3 : Sélection configuration (force 1 si possible)
+        if (this.device.configuration === null) {
+          await this.device.selectConfiguration(1);
+          this.log('Configuration 1 forcée');
+        } else {
+          this.log(`Configuration active : ${this.device.configuration.configurationValue}`);
         }
-      }
 
-      async connectDev(brand) {
-        try {
-          if (this.device) {
-            await this.disconnectDev();
-          }
+        // Étape 4 : Claim agressif sur interfaces 0 à 5 + détection endpoints immédiate
+        let claimed = false;
+        let claimedInterface = -1;
 
-          this.log(`Sélection ${brand.toUpperCase()}...`);
+        for (let i = 0; i < 6; i++) {
+          try {
+            await this.device.claimInterface(i);
+            this.log(`Interface ${i} réclamée avec succès !`);
 
-          this.device = await navigator.usb.requestDevice({
-            filters: [{ vendorId: 0x04e8 }]
-          });
+            claimed = true;
+            claimedInterface = i;
 
-          if (!this.device) {
-            throw new Error('Aucun appareil sélectionné');
-          }
+            // Recherche immédiate des endpoints dans cette interface
+            const config = this.device.configuration;
+            if (config) {
+              const intf = config.interfaces.find(ifc => ifc.interfaceNumber === i);
+              if (intf) {
+                const alt = intf.alternates[0];
+                if (alt) {
+                  this.log(`Endpoints trouvés sur interface \( {i} ( \){alt.endpoints.length} au total) :`);
+                  alt.endpoints.forEach(ep => {
+                    this.log(`  → EP${ep.endpointNumber} | direction: ${ep.direction} | type: ${ep.type} | packetSize: ${ep.packetSize}`);
+                    if (ep.direction === 'out' && ep.type === 'bulk') {
+                      this.epOut = ep;
+                    }
+                    if (ep.direction === 'in' && ep.type === 'bulk') {
+                      this.epIn = ep;
+                    }
+                  });
+                } else {
+                  this.log('Aucun alternate setting sur cette interface');
+                }
+              } else {
+                this.log('Interface claimée non retrouvée dans config');
+              }
+            }
 
-          await this.device.open();
-          this.log(`${brand.toUpperCase()} ouvert.`);
-
-          // Debug configurations
-          const configs = this.device.configurations || [];
-          this.log(`Configurations trouvées: ${configs.length}`);
-
-          if (configs.length === 0) {
-            throw new Error('Aucune configuration disponible');
-          }
-
-          await this.device.selectConfiguration(1); // la plus courante
-          this.log('Configuration 1 sélectionnée');
-
-          // Essayer plusieurs interfaces
-          let claimed = false;
-          for (let i = 0; i < 3; i++) {
-            try {
-              await this.device.claimInterface(i);
-              this.log(`Interface ${i} USB réclamée (0).`);
-              claimed = true;
+            // Si on a trouvé au moins un IN et un OUT → on arrête là
+            if (this.epIn && this.epOut) {
               break;
-            } catch (e) {
-              this.log(`Interface ${i} refusée: ${e.message}`);
             }
+
+          } catch (claimErr) {
+            this.log(`Interface ${i} refusée : ${claimErr.message}`);
           }
-
-          if (!claimed) {
-            throw new Error('Aucune interface réclamable');
-          }
-
-          // Extraire endpoints
-          const iface = configs[0].interfaces.find(intf => intf.claimed) || configs[0].interfaces[0];
-          const alternates = iface.alternates || [];
-          const endpoints = alternates[0]?.endpoints || [];
-
-          this.log(`Endpoints trouvés: ${endpoints.length}`);
-
-          endpoints.forEach(e => {
-            if (e.direction === 'out' && e.type === 'bulk') {
-              this.epOut = e;
-            }
-            if (e.direction === 'in' && e.type === 'bulk') {
-              this.epIn = e;
-            }
-          });
-
-          if (!this.epOut || !this.epIn) {
-            throw new Error('Endpoints insuffisants trouvés (IN/OUT bulk manquants)');
-          }
-
-          this.currentBrand = brand;
-          this.updateStatus(`SYNC OK - ${brand.toUpperCase()}`, '#00ff41');
-          this.log('SYNC OK. IN:' + this.epIn.endpointNumber + ' OUT:' + this.epOut.endpointNumber, 'success');
-
-          // Démarrer lecture continue si besoin
-          // this.startContinuousReading();
-
-        } catch (e) {
-          this.updateStatus('CONNECTION ÉCHEC', '#ff4444');
-          this.log('ERREUR CONNEXION: ' + e.message, 'err');
-          this.device = null;
         }
-      }
 
-      async disconnectDev() {
-        try {
-          if (this.readInterval) clearInterval(this.readInterval);
-          if (this.autoInterval) clearInterval(this.autoInterval);
-
-          if (this.device) {
-            try {
-              await this.device.close();
-            } catch (e) {}
-          }
-
-          this.device = null;
-          this.epIn = null;
-          this.epOut = null;
-          this.updateStatus('DISCONNECTED', '#888');
-          this.log('Déconnexion effectuée.', 'success');
-        } catch (e) {
-          this.log('ERREUR déconnexion: ' + e.message);
+        if (!claimed) {
+          throw new Error('Impossible de claimer une interface (0 à 5)');
         }
+
+        // Étape 5 : Vérification finale des endpoints
+        if (!this.epOut || !this.epIn) {
+          throw new Error('Endpoints bulk IN/OUT manquants malgré claim réussi');
+        }
+
+        this.currentBrand = 'SAMSUNG';
+        this.updateStatus('CONNECTÉ FORCE – OPÉRATIONNEL', '#00ff41');
+        this.log(`Connexion établie → IN: EP\( {this.epIn.endpointNumber} | OUT: EP \){this.epOut.endpointNumber}`, 'success');
+
+      } catch (e) {
+        this.log(`ÉCHEC TOTAL CONNEXION: \( {e.message} ( \){e.name || 'inconnu'})`, 'err');
+        this.updateStatus('ÉCHEC CONNEXION', '#ff0000');
+        this.device = null;
       }
-
-      // Les autres fonctions (inject, readLogs, toggleAutoPilot, etc.) restent inchangées
-      // ... (tu peux les garder telles quelles ou les copier depuis ton ancien code)
-
     }
 
-    const manager = new DeviceManager();
-
-    // Fonction debug complète (appelée par le bouton SCAN)
-    async function debugSamsungUSB() {
-      await manager.connectDev('SAMSUNG');
+    async disconnectDev() {
+      if (this.device) {
+        try { await this.device.close(); } catch {}
+        this.device = null;
+      }
+      this.epIn = this.epOut = null;
+      this.updateStatus('DISCONNECTED', '#888');
+      this.log('Déconnexion complète');
     }
 
-    // Fonctions interface (inchangées)
-    async function connectDev(brand) { await manager.connectDev(brand); }
-    function toggelleAutoPilot() { manager.toggelleAutoPilot(); }
-    async function nukeSystem() { await manager.nukeSystem(); }
-    async function inject(cmd) { await manager.inject(cmd); }
-    function injectManual() { manager.injectManual(); }
-    function exportLogs() { manager.exportLogs(); }
-    function clearLogs() { manager.clearLogs(); }
-    function appleDiag(type) { manager.appleDiag(type); }
+    async inject(cmd) {
+      this.log(`[INJECT] ${cmd} (simulation pédagogique)`, 'success');
+    }
 
-    // Pour auto-pilot (exemple simplifié)
-    DeviceManager.prototype.toggelleAutoPilot = function() {
+    async nukeSystem() {
+      this.log('NUKE déclenché (simulation pédagogique – aucun impact réel)', 'err');
+    }
+
+    toggleAutoPilot() {
       if (this.autoInterval) {
         clearInterval(this.autoInterval);
         this.autoInterval = null;
-        this.log('AUTO-PILOT ARRÊTÉ');
+        this.log('AUTO-PILOT arrêté');
         return;
       }
-      this.log('AUTO-PILOT + MONITOR activé');
-      this.autoInterval = setInterval(async () => {
-        try {
-          await this.inject('shell:am start -n com.android.settings/.Settings');
-          await this.inject('shell:am force-stop com.samsung.android.app.galaxyfinder');
-          await this.inject('shell:settings put global adb_enabled 1');
-        } catch (e) {
-          this.log('ERREUR AUTO-PILOT: ' + e.message);
-        }
-      }, 30000);
-    };
+      this.log('AUTO-PILOT activé (simulation pédagogique)');
+      this.autoInterval = setInterval(() => {
+        this.log('Cycle auto-pilot simulé');
+      }, 15000);
+    }
 
-  </script>
+    injectManual() {
+      const val = document.getElementById('manualCmd').value.trim();
+      if (val) this.inject(val);
+      document.getElementById('manualCmd').value = '';
+    }
+
+    exportLogs() { this.log('Export logs simulé'); }
+
+    clearLogs() {
+      this.consoleEL.innerHTML = '';
+      this.logCount = 0;
+      this.log('Logs effacés');
+    }
+  }
+
+  const manager = new DeviceManager();
+
+  // Liaison du bouton SCAN
+  document.getElementById('scanBtn').addEventListener('click', () => manager.connectDev());
+
+  // Les autres fonctions d'interface (inchangées)
+  async function connectDev() { await manager.connectDev(); }
+  async function disconnectDev() { await manager.disconnectDev(); }
+  function toggleAutoPilot() { manager.toggleAutoPilot(); }
+  async function nukeSystem() { await manager.nukeSystem(); }
+  async function inject(cmd) { await manager.inject(cmd); }
+  function injectManual() { manager.injectManual(); }
+  function exportLogs() { manager.exportLogs(); }
+  function clearLogs() { manager.clearLogs(); }
+
+</script>
 
 </body>
 </html>
